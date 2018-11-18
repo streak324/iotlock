@@ -1,0 +1,15 @@
+[Unit]
+Description=Safebox Web Server
+
+[Service]
+ExecStart=/home/andrew/safebox_web/index.js
+Restart=always
+User=nobody
+# Note Debian/Ubuntu uses 'nogroup', RHEL/Fedora uses 'nobody'
+Group=nobody
+Environment=PATH=/usr/bin:/usr/local/bin
+Environment=NODE_ENV=production
+WorkingDirectory=/home/andrew/safebox_web
+
+[Install]
+WantedBy=multi-user.target
