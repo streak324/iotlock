@@ -87,9 +87,9 @@ app.post('/admin_approve', (request, response) =>
 {
     if(request.session.isAdmin)
     {
-        if(request.body.approve)
+        console.log("Admin responded to request: " + request.body.approve);
+        if(request.body.approve === true)
         {
-            console.log("Admin approved a request");
             grantAccess(request.body.email);
         }
         for(var i =0; i < requestEntries.length; ++i)
