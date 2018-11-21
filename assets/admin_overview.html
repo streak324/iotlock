@@ -10,13 +10,41 @@
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <script>
         $(document).ready(function(){
-            $.post("http://localhost:3000/admin_view_requests", function(data){
+            var url = window.location.hostname + ":" + window.location.port
+            var entries;
+            function respondToRequest(index, accept)
+            {
+                var entry = entries[index];
+                $.post("http://"+url+"/admin_approve", 
+                        {approve:accept, email:entry.email, timestamp:entry.timestamp},
+                        (data) => {});
+                console.log("#request_"+index);
+                if(accept)
+                {
+                    $("#request_"+index).html('<p style="color:green">APPROVED</p>');
+                }
+                else
+                {
+                    $("#request_"+index).html('<p style="color:red">DENIED</p>');
+                }
+            }
+            $.post("http://"+url+"/admin_view_requests", function(data) {
                 if(data.success && data.msg.length > 0)
                 {
-                    $("#request_list").html(data.msg);
-                    for(var i=0; i < data.msg.length; ++i)
+                    entries = data.msg;
+                    $("#request_list").append("Here are the list of recent requests<br>");
+                    for(var index=0; index < data.msg.length; ++index)
                     {
-                        $("#request_list").append(data.msg[i]);
+                        var entry = data.msg[index];
+                        var htmlText = '<div id="request_'+index+'">';
+                        htmlText += "Date: " + JSON.stringify(entry.timestamp);
+                        htmlText += " Email: " + JSON.stringify(entry.email);
+                        htmlText += " Message: " + JSON.stringify(entry.msg) + " ";
+                        htmlText += " Duration: " + JSON.stringify(entry.duration) + " ";
+                        htmlText += '<button class="approve" id="approve_'+index+'">Yes</button> ';
+                        htmlText += '<button class= "deny" id="deny_'+index+'">No</button>';
+                        htmlText += "</div>";
+                        $("#request_list").append(htmlText);
                     }
                 }
                 else
@@ -24,12 +52,23 @@
                     $("#request_list").html("No requests have been made");
                 }
             });
+            $(document).on("click", ".approve", function () {
+               var clickedBtnID = $(this).attr('id');
+               var index = clickedBtnID.substring(8, clickedBtnID.length);
+               respondToRequest(index, true);
+            });
+
+            $(document).on("click", ".deny", function () {
+               var clickedBtnID = $(this).attr('id');
+               var index = clickedBtnID.substring(5, clickedBtnID.length);
+               respondToRequest(index, false);
+            });
         });
     </script>
 </head>
 
 <body>
-    Hi Admin.<br>
+    Hi Admin.<br><br>
     <div id="request_list"></div>
 </body>
 </html>

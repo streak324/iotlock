@@ -12,16 +12,25 @@
         $(document).ready(function(){
             $("#submit").click(function(){
                 var request_email = $("#email_field").val();
+                var request_duration = $("#time_field").val();
                 if(request_email === "")
                 {
+                    $("#server_response").html("Enter email");
+                    return;
+                }
+                if(request_duration === "" || isNaN(parseInt(request_duration)))
+                {
+                    $("#server_response").html("Enter a desired time duration");
                     return;
                 }
                 var request_msg = $("#msg_field").val();
-                $.post("http://localhost:3000/request_submit",
-                    {iMadeRequest: true, email: request_email, msg: request_msg}, function(data)
-                {
-                    $("#server_response").html(data);
-                });
+                var url = window.location.hostname + ":" + window.location.port
+                $.post("http://"+url+"/request_submit",
+                    {iMadeRequest: true, email: request_email, msg: request_msg, duration: request_duration}, 
+                    function(data)
+                    {
+                        $("#server_response").html(data);
+                    });
             });
         });
     </script>
@@ -29,7 +38,8 @@
 
 <body>
     Hey pleb, want to make a request? Fill out the form<br>
-    <input type="text" id="email_field" placeholder="Enter Your Email">
+    <input type="text" id="email_field" placeholder="Enter Your Email"><br>
+    <input type="text" id="time_field" placeholder="Duration of use (seconds)"><br>
     Message (optional): <br>
     <textarea rows="4" cols="50" id="msg_field"></textarea> <br>
     <button id="submit">Open up</button><br>

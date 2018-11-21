@@ -17,7 +17,8 @@
                     return;
                 }
                 console.log("Click");
-                $.post("http://localhost:3000/admin_login",{passGuess: passwordEntry}, function(data){
+                var url = window.location.hostname + ":" + window.location.port
+                $.post("http://"+url+"/admin_login",{passGuess: passwordEntry}, function(data){
                     if(data.success)
                     {
                         location.reload();
