@@ -9,6 +9,11 @@ const nodemailer = require('nodemailer');
 var adminPass = 'secret';
 var adminEmail = 'streak324@gmail.com';
 var requestEntries = [];
+var passEntries = [{email_ad: "andrewsepulveda95@gmail.com", lifespan: 30, pass: "123459"}];
+var personUsingDevice = undefined;
+var iotSecret = "alakazam";
+var alarmEmailInterval = 20 * 60 * 60;
+var lastAlarmEmailSent = 0;
 const requestInterval = 30 * 1000;
 const maxRequestsDisplayed = 10;
 
@@ -51,12 +56,15 @@ function randomIntegerString(length)
     return result;
 }
 
-function grantAccess(email)
+function providePassword(email, duration)
 {
     var tempPass = randomIntegerString(6);
     sendMail(email, 
              "Request has been Approved", 
              "Here is your temporary password <b>" + tempPass + "</b>");
+    var passEntry = {email_ad: email, lifespan: duration, pass: tempPass};
+    passEntries.push(passEntry);
+    console.log("As of " + Date.now() + " Lock Password: " + passEntry.pass + " with a " + duration + "s lifetime has been entered into the system");
 }
 
 app.use(session({ secret: 'keyboard warrior', resave: true, saveUninitialized:true, cookie: { maxAge: 60 * 1000 }}));
@@ -65,6 +73,57 @@ app.use(bodyParser.json());
 
 app.get('/', (request, response) => {
     response.sendFile(__dirname+'/assets/index.html');
+});
+
+
+app.get('/iot_status', (request, response) => {
+    console.log("IoT Device has setup an http connection");
+    response.end();
+});
+
+app.post('/iot_status', (request, response) => {
+    console.log("Data sent from IoT Device " + JSON.stringify(request.body));
+    if(request.body.secret === iotSecret)
+    {
+        switch(request.body.type)
+        {
+            case 'p':
+            {
+                for(var i=0; i < passEntries.length; ++i)
+                {
+                    if(passEntries[i].pass === request.body.pass)
+                    {
+                        console.log("Correct Password submitted by IoT Device");
+                        response.send({life: passEntries[i].lifespan, ok: 1});
+                        personUsingDevice = passEntries[i];
+                        return;
+                    }
+                }
+                response.send({ok: 0});
+            } break;
+            case 'a1':
+            {
+                console.log("Sound Alert");
+                if(lastAlarmEmailSent < Date.now() + alarmEmailInterval)
+                {
+                    lastAlarmEmailSent = Date.now();
+                    sendMail(adminEmail, "IoT Box Overstayed Welcome", personUsingDevice.email_ad + " HAS NOT CLOSED THEIR REQUEST");
+                }
+            }
+            case 'a2':
+            {
+                if(lastAlarmEmailSent < Date.now() + alarmEmailInterval)
+                {
+                    lastAlarmEmailSent = Date.now();
+                    sendMail(adminEmail, "IoT Box Broken In", "SOMEONE IS TRYING TO BREAK INTO THE IOT BOX");
+                }
+            }
+            default:
+                response.send({msg: "Hello IoT Device"});
+                break;
+        }
+    }
+    response.end();
 });
 
 app.post('/admin_login', (request, response) => {
@@ -88,15 +147,14 @@ app.post('/admin_approve', (request, response) =>
     if(request.session.isAdmin)
     {
         console.log("Admin responded to request: " + request.body.approve);
-        if(request.body.approve === true)
+        if(parseInt(request.body.approve) === 1)
         {
-            grantAccess(request.body.email);
+            providePassword(request.body.email, request.body.duration);
         }
         for(var i =0; i < requestEntries.length; ++i)
         {
             if(requestEntries[i].timestamp === parseInt(request.body.timestamp))
             {
-                console.log("Removing request");
                 requestEntries.splice(i, 1);
                 break;
             }
@@ -137,7 +195,7 @@ app.post('/request_submit', (request, response) => {
     if(request.session.isAdmin)
     {
         response.send('Your an admin, your request has been automatically granted.');
-        grantAccess(request.body.email);
+        providePassword(request.body.email, request.duration);
     }
     else if(request.body.iMadeRequest && (!lastRequest || lastRequest < Date.now()))
     {
@@ -159,6 +217,5 @@ app.get('/request', (request, response) => {
 });
 
 app.listen(3000, () => {
-    console.log('Listening on localhost:3000');
+    console.log('Listening on port 3000');
 });
-
