@@ -12,6 +12,32 @@
         $(document).ready(function(){
             var url = window.location.hostname + ":" + window.location.port
             var entries;
+            var hoursState;
+            var usePopularTimes;
+            $.get("http://"+url+"/admin_hours_state", function(data)
+            {
+                if(data.state == true)
+                {
+                    hoursState = true;
+                    $("#toggleHours").html("Disable Normal Hours");
+                }
+                else
+                {
+                    $("#toggleHours").html("Enable Normal Hours");
+                    hoursState = false;
+                }
+                if(data.popularTimes == true)
+                {
+                    usePopularTimes = true;
+                }
+                else
+                {
+                    usePopularTimes = false;
+                }
+                $("#usePopularTimes").prop("checked", usePopularTimes);
+                $("#placeIDField").prop("disabled", !usePopularTimes);
+                $("#placeIDButton").prop("disabled", !usePopularTimes);
+            });
             function respondToRequest(index, accept)
             {
                 var entry = entries[index];
@@ -63,12 +89,51 @@
                var index = clickedBtnID.substring(5, clickedBtnID.length);
                respondToRequest(index, 0);
             });
+            $(document).on("click", "#toggleHours", function()
+            {
+                $.post("http://"+url+"/admin_toggle_hours", function(data)
+                {
+                    if(data.ok) hoursState = !hoursState;
+                    if(hoursState == true)
+                    {
+                        $("#toggleHours").html("Disable Normal Hours");
+                    }
+                    else
+                    {
+                        $("#toggleHours").html("Enable Normal Hours");
+                    }
+                });
+            });
+            $(document).on("click", "#usePopularTimes", function()
+            {
+                $.post("http://"+url+"/admin_toggle_popular", function(data)
+                {
+                    if(data.ok) usePopularTimes = !usePopularTimes;
+                    $("#placeIDField").prop("disabled", !usePopularTimes);
+                    $("#placeIDButton").prop("disabled", !usePopularTimes);
+                });
+            });
+            $(document).on("click", "#placeIDButton", function()
+            {
+                console.log($("#placeIDField").val());
+                $.post("http://"+url+"/admin_update_place_id", {placeID: $("#placeIDField").val()}, function(data)
+                {
+                    if(data.ok) $("#placeIDRespones").html("Place ID Updated!");
+                    else $("#placeIDRespones").html("Problems with updating the place ID");
+                });
+            });
         });
     </script>
 </head>
 
 <body>
-    Hi Admin.<br><br>
+    Hi Admin.<br>
+    <button id="toggleHours"></button><br><br>
+    <input type="checkbox" id="usePopularTimes"> Use Google Popular Times<br>
+    Enter Place ID: <br>
+    <input type="text", id="placeIDField" disabled><br>
+    <button id="placeIDButton" disabled>Update</button><br><br>
+    <div id="placeIDResponse" color="red"></div>
     <div id="request_list"></div>
 </body>
 </html>
